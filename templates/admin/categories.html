@@ -1,0 +1,23 @@
+{% extends "admin/layout.html" %}
+{% block admin_content %}
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+  <h1 class="h4 fw-bold mb-0">Categories</h1>
+  <a href="{{ url_for('admin_category_form') }}" class="btn btn-brand"><i class="fa-solid fa-plus me-1"></i>Add</a>
+</div>
+<div class="row g-3">
+  {% for c in categories %}
+  <div class="col-md-6 col-xl-4">
+    <div class="glass p-4 rounded-4 h-100 d-flex flex-column">
+      <h2 class="h6 fw-bold">{{ c.name }}</h2>
+      <p class="small text-muted flex-grow-1">{{ c.description or '—' }}</p>
+      <div class="d-flex gap-2">
+        <a href="{{ url_for('admin_category_form', cid=c.id) }}" class="btn btn-sm btn-outline-glow">Edit</a>
+        <form method="post" action="{{ url_for('admin_category_delete', cid=c.id) }}" onsubmit="return confirm('Delete category?');">
+          <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
+        </form>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% endblock %}

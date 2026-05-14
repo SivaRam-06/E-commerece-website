@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}Register{% endblock %}
+{% block content %}
+<div class="auth-shell">
+  <div class="container auth-card section-fade" style="max-width:520px;">
+    <div class="glass p-4 p-md-5 rounded-4">
+      <h1 class="h3 fw-extrabold mb-2">Create your account</h1>
+      <p class="text-muted mb-4">Join EliteMart for wishlists, order history, and more.</p>
+      <form method="post" class="vstack gap-3">
+        <div>
+          <label class="form-label small fw-semibold">Full name</label>
+          <input type="text" name="full_name" class="form-control form-control-lg" required>
+        </div>
+        <div>
+          <label class="form-label small fw-semibold">Username</label>
+          <input type="text" name="username" class="form-control form-control-lg" required minlength="3">
+        </div>
+        <div>
+          <label class="form-label small fw-semibold">Email</label>
+          <input type="email" name="email" class="form-control form-control-lg" required>
+        </div>
+        <div>
+          <label class="form-label small fw-semibold">Password</label>
+          <input type="password" name="password" class="form-control form-control-lg" required minlength="6">
+        </div>
+        <button type="submit" class="btn btn-brand btn-lg w-100">Register</button>
+      </form>
+      <p class="small text-center text-muted mt-3 mb-0">Already have an account? <a href="{{ url_for('login') }}">Login</a></p>
+    </div>
+  </div>
+</div>
+{% endblock %}

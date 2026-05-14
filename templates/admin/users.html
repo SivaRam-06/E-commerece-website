@@ -1,0 +1,21 @@
+{% extends "admin/layout.html" %}
+{% block admin_content %}
+<h1 class="h4 fw-bold mb-4">Users</h1>
+<div class="table-responsive glass rounded-4">
+  <table class="table mb-0">
+    <thead><tr><th>ID</th><th>Username</th><th>Email</th><th>Name</th><th>Admin</th><th>Joined</th></tr></thead>
+    <tbody>
+      {% for u in users %}
+      <tr>
+        <td>{{ u.id }}</td>
+        <td>{{ u.username }}</td>
+        <td>{{ u.email }}</td>
+        <td>{{ u.full_name or '—' }}</td>
+        <td>{% if u.is_admin %}<span class="badge bg-danger">Yes</span>{% else %}<span class="badge bg-light text-dark">No</span>{% endif %}</td>
+        <td class="small text-muted">{{ u.created_at[:10] if u.created_at else '' }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}Orders{% endblock %}
+{% block content %}
+<div class="container py-4 section-fade">
+  <h1 class="h3 fw-bold mb-4">Your orders</h1>
+  {% if orders %}
+  <div class="table-responsive glass rounded-4">
+    <table class="table table-hover align-middle mb-0">
+      <thead class="table-light"><tr><th>Order</th><th>Date</th><th>Total</th><th>Status</th><th></th></tr></thead>
+      <tbody>
+        {% for o in orders %}
+        <tr>
+          <td class="fw-semibold">#{{ o.id }}</td>
+          <td class="text-muted small">{{ o.created_at[:19] if o.created_at else '' }}</td>
+          <td>₹{{ '{:,.0f}'.format(o.total) }}</td>
+          <td>
+            {% set st = o.status %}
+            <span class="badge rounded-pill {% if st == 'Delivered' %}bg-success{% elif st == 'Cancelled' %}bg-secondary{% elif st == 'Shipped' or st == 'Out for delivery' %}bg-info text-dark{% else %}bg-warning text-dark{% endif %}">{{ st }}</span>
+          </td>
+          <td><a href="{{ url_for('order_detail', oid=o.id) }}" class="btn btn-sm btn-outline-glow">Details</a></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="glass p-5 rounded-4 text-center text-muted">No orders yet. <a href="{{ url_for('products') }}">Start shopping</a>.</div>
+  {% endif %}
+</div>
+{% endblock %}

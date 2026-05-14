@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+{% block title %}Profile{% endblock %}
+{% block content %}
+<div class="container py-4 section-fade">
+  <h1 class="h3 fw-bold mb-4">Account</h1>
+  <div class="row g-4">
+    <div class="col-lg-4">
+      <div class="glass p-4 rounded-4 text-center">
+        <div class="rounded-circle mx-auto mb-3 d-flex align-items-center justify-content-center text-white fw-bold fs-3"
+             style="width:88px;height:88px;background:linear-gradient(135deg,#2563eb,#38bdf8);">
+          {{ (user.full_name or user.username)[0]|upper }}
+        </div>
+        <div class="fw-bold">{{ user.full_name or user.username }}</div>
+        <div class="small text-muted">{{ user.email }}</div>
+      </div>
+    </div>
+    <div class="col-lg-8">
+      <ul class="nav nav-pills mb-3 gap-2 flex-wrap" id="profileTabs" role="tablist">
+        <li class="nav-item"><button class="nav-link active rounded-pill px-4" data-bs-toggle="pill" data-bs-target="#tabProfile" type="button">Profile</button></li>
+        <li class="nav-item"><button class="nav-link rounded-pill px-4" data-bs-toggle="pill" data-bs-target="#tabPass" type="button">Password</button></li>
+        <li class="nav-item"><button class="nav-link rounded-pill px-4" data-bs-toggle="pill" data-bs-target="#tabAddr" type="button">Addresses</button></li>
+      </ul>
+      <div class="tab-content">
+        <div class="tab-pane fade show active glass p-4 rounded-4" id="tabProfile">
+          <h2 class="h6 fw-bold mb-3">Edit profile</h2>
+          <form method="post">
+            <input type="hidden" name="action" value="profile">
+            <div class="mb-3">
+              <label class="form-label small">Full name</label>
+              <input type="text" name="full_name" class="form-control" value="{{ user.full_name or '' }}">
+            </div>
+            <div class="mb-3">
+              <label class="form-label small">Phone</label>
+              <input type="text" name="phone" class="form-control" value="{{ user.phone or '' }}">
+            </div>
+            <div class="mb-3">
+              <label class="form-label small">Email</label>
+              <input type="email" name="email" class="form-control" value="{{ user.email }}">
+            </div>
+            <button type="submit" class="btn btn-brand">Save changes</button>
+          </form>
+        </div>
+        <div class="tab-pane fade glass p-4 rounded-4" id="tabPass">
+          <h2 class="h6 fw-bold mb-3">Change password</h2>
+          <form method="post">
+            <input type="hidden" name="action" value="password">
+            <div class="mb-3">
+              <label class="form-label small">Current password</label>
+              <input type="password" name="old_password" class="form-control" required>
+            </div>
+            <div class="mb-3">
+              <label class="form-label small">New password</label>
+              <input type="password" name="new_password" class="form-control" required minlength="6">
+            </div>
+            <button type="submit" class="btn btn-brand">Update password</button>
+          </form>
+        </div>
+        <div class="tab-pane fade glass p-4 rounded-4" id="tabAddr">
+          <h2 class="h6 fw-bold mb-3">Saved addresses</h2>
+          {% for a in addresses %}
+          <div class="border rounded-3 p-3 mb-3">
+            <div class="fw-semibold">{{ a.label }}{% if a.is_default %} <span class="badge bg-primary">Default</span>{% endif %}</div>
+            <div class="small text-muted">{{ a.full_name }}, {{ a.line1 }}, {{ a.city }} {{ a.zip }}</div>
+          </div>
+          {% else %}
+          <p class="text-muted small">No saved addresses.</p>
+          {% endfor %}
+          <hr>
+          <h3 class="h6 fw-bold mb-3">Add address</h3>
+          <form method="post" class="row g-3">
+            <input type="hidden" name="action" value="address">
+            <div class="col-md-6"><label class="form-label small">Label</label><input name="label" class="form-control" placeholder="Home"></div>
+            <div class="col-md-6"><label class="form-label small">Full name</label><input name="addr_name" class="form-control" required></div>
+            <div class="col-md-6"><label class="form-label small">Phone</label><input name="addr_phone" class="form-control" required></div>
+            <div class="col-12"><label class="form-label small">Line 1</label><input name="line1" class="form-control" required></div>
+            <div class="col-12"><label class="form-label small">Line 2</label><input name="line2" class="form-control"></div>
+            <div class="col-md-4"><label class="form-label small">City</label><input name="city" class="form-control" required></div>
+            <div class="col-md-4"><label class="form-label small">State</label><input name="state" class="form-control" required></div>
+            <div class="col-md-4"><label class="form-label small">PIN</label><input name="zip" class="form-control" required></div>
+            <div class="col-12"><div class="form-check"><input class="form-check-input" type="checkbox" name="is_default" id="def" value="1"><label class="form-check-label" for="def">Set as default</label></div></div>
+            <div class="col-12"><button type="submit" class="btn btn-brand">Save address</button></div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

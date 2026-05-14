@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}Admin{% endblock %}
+{% block content %}
+<div class="container-fluid py-4">
+  <div class="row g-0">
+    <aside class="col-lg-2 admin-sidebar p-3 rounded-end-4 mb-3 mb-lg-0">
+      <div class="fw-bold mb-3 text-primary">Admin</div>
+      <nav class="nav flex-column gap-1 small">
+        <a class="nav-link rounded-3 fw-semibold {{ 'active bg-primary text-white' if request.endpoint == 'admin_dashboard' }}" href="{{ url_for('admin_dashboard') }}">Dashboard</a>
+        <a class="nav-link rounded-3 fw-semibold {{ 'active bg-primary text-white' if request.endpoint in ('admin_products','admin_product_form','admin_product_delete') }}" href="{{ url_for('admin_products') }}">Products</a>
+        <a class="nav-link rounded-3 fw-semibold {{ 'active bg-primary text-white' if 'admin_categor' in (request.endpoint or '') }}" href="{{ url_for('admin_categories') }}">Categories</a>
+        <a class="nav-link rounded-3 fw-semibold" href="{{ url_for('admin_users') }}">Users</a>
+        <a class="nav-link rounded-3 fw-semibold" href="{{ url_for('admin_orders') }}">Orders</a>
+        <hr>
+        <a class="nav-link rounded-3 text-muted" href="{{ url_for('index') }}">← Storefront</a>
+      </nav>
+    </aside>
+    <div class="col-lg-10 ps-lg-4">
+      {% block admin_content %}{% endblock %}
+    </div>
+  </div>
+</div>
+{% endblock %}

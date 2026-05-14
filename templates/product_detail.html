@@ -1,0 +1,141 @@
+{% extends "base.html" %}
+{% block title %}{{ product.name }}{% endblock %}
+{% block content %}
+<div class="container py-4">
+  <nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb small">
+      <li class="breadcrumb-item"><a href="{{ url_for('index') }}">Home</a></li>
+      <li class="breadcrumb-item"><a href="{{ url_for('products', category=product.category_slug) }}">{{ product.category_name }}</a></li>
+      <li class="breadcrumb-item active" aria-current="page">{{ product.name }}</li>
+    </ol>
+  </nav>
+  <div class="row g-4 section-fade">
+    <div class="col-lg-6">
+      <div class="glass p-3 rounded-4">
+        <div class="ratio ratio-1x1 rounded-3 overflow-hidden img-zoom-wrap" style="background:linear-gradient(145deg,rgba(37,99,235,0.08),transparent);">
+          <img src="{% if product.image and product.image.startswith('http') %}{{ product.image }}{% else %}{{ url_for('static', filename='images/' ~ (product.image or 'placeholder.svg')) }}{% endif %}"
+               class="w-100 h-100 object-fit-cover" alt="{{ product.name }}" id="mainProductImg">
+        </div>
+        <div class="d-flex gap-2 mt-3 justify-content-center">
+          {% for i in range(3) %}
+          <button type="button" class="border-0 p-0 rounded-3 overflow-hidden bg-transparent" style="width:72px;height:72px;" data-gallery-src="{% if product.image and product.image.startswith('http') %}{{ product.image }}{% else %}{{ url_for('static', filename='images/' ~ (product.image or 'placeholder.svg')) }}{% endif %}">
+            <img src="{% if product.image and product.image.startswith('http') %}{{ product.image }}{% else %}{{ url_for('static', filename='images/' ~ (product.image or 'placeholder.svg')) }}{% endif %}" class="w-100 h-100 object-fit-cover" alt="">
+          </button>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-6">
+      <span class="badge bg-primary bg-opacity-10 text-primary">{{ product.category_name }}</span>
+      <h1 class="display-6 fw-extrabold mt-2">{{ product.name }}</h1>
+      <div class="d-flex align-items-center gap-2 mb-3">
+        {% set nr = (avg_rating|default(0)|float)|int %}
+        <div class="text-warning">{% for i in range(5) %}<i class="fa-{{ 'solid' if i < nr else 'regular' }} fa-star"></i>{% endfor %}</div>
+        <span class="text-muted small">({{ review_count }} reviews)</span>
+      </div>
+      <div class="d-flex align-items-baseline gap-3 mb-4">
+        <span class="display-6 fw-bold text-gradient">₹{{ '{:,.0f}'.format(product.price) }}</span>
+        {% if product.compare_at_price %}
+        <span class="price-compare fs-5">₹{{ '{:,.0f}'.format(product.compare_at_price) }}</span>
+        <span class="badge bg-danger bg-opacity-10 text-danger">{{ (((product.compare_at_price - product.price) / product.compare_at_price) * 100)|round|int }}% off</span>
+        {% endif %}
+      </div>
+      <p class="text-muted lead fs-6">{{ product.description }}</p>
+      <p class="small"><i class="fa-solid fa-box me-1 text-primary"></i>{{ product.stock }} in stock</p>
+      {% if current_user %}
+      <div class="d-flex flex-wrap gap-3 align-items-center mt-4">
+      <div class="d-flex flex-wrap gap-3 align-items-center mt-4">
+        <form action="{{ url_for('cart_add') }}" method="post" class="d-flex flex-wrap gap-3 align-items-center" data-toast-cart="Added to cart">
+          <input type="hidden" name="product_id" value="{{ product.id }}">
+          <input type="hidden" name="redirect" value="{{ request.full_path }}">
+          <label class="small fw-semibold mb-0">Qty</label>
+          <input type="number" name="quantity" value="1" min="1" max="{{ product.stock }}" class="form-control" style="width:88px;">
+          <button type="submit" name="action" value="cart" class="btn btn-brand btn-lg"><i class="fa-solid fa-cart-plus me-2"></i>Add to cart</button>
+          <button type="submit" name="action" value="checkout" class="btn btn-outline-glow btn-lg">Buy now</button>
+        </form>
+        <form method="post" action="{{ url_for('wishlist_toggle', pid=product.id) }}" data-wishlist class="d-inline">
+          <button type="submit" class="wishlist-btn btn-lg {{ 'active' if in_wishlist }}" aria-label="Wishlist"><i class="fa-solid fa-heart"></i></button>
+        </form>
+      </div>
+      </div>
+      {% else %}
+      <a href="{{ url_for('login', next=request.full_path) }}" class="btn btn-brand btn-lg mt-3">Login to purchase</a>
+      {% endif %}
+    </div>
+  </div>
+
+  <section class="mt-5 section-fade">
+    <h2 class="h4 fw-bold mb-3">Ratings & reviews</h2>
+    <div class="row g-4">
+      <div class="col-lg-5">
+        {% if current_user %}
+        <div class="glass p-4 rounded-4">
+          <h3 class="h6 fw-bold mb-3">Write a review</h3>
+          <form action="{{ url_for('add_review', pid=product.id) }}" method="post">
+            <div class="mb-3">
+              <label class="form-label small">Rating</label>
+              <select name="rating" class="form-select">
+                {% for n in range(5,0,-1) %}
+                <option value="{{ n }}">{{ n }} stars</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="mb-3">
+              <label class="form-label small">Comment</label>
+              <textarea name="comment" class="form-control" rows="3" placeholder="Share your experience"></textarea>
+            </div>
+            <button type="submit" class="btn btn-brand">Submit review</button>
+          </form>
+        </div>
+        {% else %}
+        <p class="text-muted"><a href="{{ url_for('login') }}">Sign in</a> to leave a review.</p>
+        {% endif %}
+      </div>
+      <div class="col-lg-7">
+        {% for r in reviews %}
+        <div class="glass p-3 rounded-4 mb-3">
+          <div class="text-warning small mb-1">{% for i in range(r.rating) %}<i class="fa-solid fa-star"></i>{% endfor %}</div>
+          <p class="mb-1">{{ r.comment }}</p>
+          <span class="small text-muted">{{ r.full_name or r.username }} · {{ r.created_at[:10] if r.created_at else '' }}</span>
+        </div>
+        {% else %}
+        <p class="text-muted">No reviews yet. Be the first.</p>
+        {% endfor %}
+      </div>
+    </div>
+  </section>
+
+  {% if related %}
+  <section class="mt-5 section-fade">
+    <h2 class="h4 fw-bold mb-4">Related products</h2>
+    <div class="row g-4">
+      {% for p in related %}
+      <div class="col-6 col-md-3">
+        <div class="card card-product h-100">
+          <div class="img-wrap">
+            <img src="{{ url_for('static', filename='images/' ~ (p.image or 'placeholder.svg')) }}" alt="{{ p.name }}">
+          </div>
+          <div class="card-body">
+            <h3 class="h6 fw-bold">{{ p.name }}</h3>
+            <span class="fw-bold">₹{{ '{:,.0f}'.format(p.price) }}</span>
+            <a class="stretched-link" href="{{ url_for('product_detail', pid=p.id) }}"></a>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </section>
+  {% endif %}
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+  document.querySelectorAll('[data-gallery-src]').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var src = btn.getAttribute('data-gallery-src');
+      var main = document.getElementById('mainProductImg');
+      if (main) main.src = src;
+    });
+  });
+</script>
+{% endblock %}

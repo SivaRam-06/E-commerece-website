@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block title %}Cart{% endblock %}
+{% block content %}
+<div class="container py-4 section-fade">
+  <h1 class="h3 fw-bold mb-4">Shopping cart</h1>
+  {% if items %}
+  <div class="row g-4">
+    <div class="col-lg-8">
+      {% for it in items %}
+      <div class="glass p-3 rounded-4 mb-3 d-flex gap-3 flex-wrap flex-md-nowrap align-items-center">
+        <div class="rounded-3 overflow-hidden flex-shrink-0" style="width:120px;height:90px;">
+          <img src="{% if it.image and it.image.startswith('http') %}{{ it.image }}{% else %}{{ url_for('static', filename='images/' ~ (it.image or 'placeholder.svg')) }}{% endif %}" class="w-100 h-100 object-fit-cover" alt="">
+        </div>
+        <div class="flex-grow-1">
+          <a href="{{ url_for('product_detail', pid=it.product_id) }}" class="fw-bold text-decoration-none">{{ it.name }}</a>
+          <div class="text-muted small">₹{{ '{:,.0f}'.format(it.price) }} each</div>
+        </div>
+        <form action="{{ url_for('cart_update') }}" method="post" class="d-flex align-items-center gap-2">
+          <input type="hidden" name="cart_id" value="{{ it.id }}">
+          <label class="small mb-0">Qty</label>
+          <input type="number" name="quantity" value="{{ it.quantity }}" min="1" max="{{ it.stock }}" class="form-control" style="width:80px;">
+          <button type="submit" class="btn btn-sm btn-outline-glow">Update</button>
+        </form>
+        <div class="fw-bold">₹{{ '{:,.0f}'.format(it.price * it.quantity) }}</div>
+        <form action="{{ url_for('cart_remove', cid=it.id) }}" method="post" onsubmit="return confirm('Remove this item?');">
+          <button type="submit" class="btn btn-sm btn-outline-danger rounded-pill"><i class="fa-solid fa-trash"></i></button>
+        </form>
+      </div>
+      {% endfor %}
+    </div>
+    <div class="col-lg-4">
+      <div class="glass p-4 rounded-4 sticky-lg-top" style="top:88px;">
+        <h2 class="h5 fw-bold mb-3">Summary</h2>
+        <div class="d-flex justify-content-between mb-2"><span class="text-muted">Subtotal</span><span class="fw-bold">₹{{ '{:,.0f}'.format(total) }}</span></div>
+        <div class="d-flex justify-content-between mb-3 small text-muted"><span>Shipping</span><span>Calculated at checkout</span></div>
+        <hr>
+        <div class="d-flex justify-content-between mb-4"><span class="fw-bold">Total</span><span class="fw-bold fs-5 text-gradient">₹{{ '{:,.0f}'.format(total) }}</span></div>
+        <a href="{{ url_for('products') }}" class="btn btn-outline-glow w-100 mb-2">Continue shopping</a>
+        <a href="{{ url_for('checkout') }}" class="btn btn-brand w-100 btn-lg">Checkout</a>
+      </div>
+    </div>
+  </div>
+  {% else %}
+  <div class="glass p-5 rounded-4 text-center">
+    <p class="text-muted mb-3">Your cart is empty.</p>
+    <a href="{{ url_for('products') }}" class="btn btn-brand">Browse products</a>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

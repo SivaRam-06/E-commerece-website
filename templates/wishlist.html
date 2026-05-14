@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}Wishlist{% endblock %}
+{% block content %}
+<div class="container py-4 section-fade">
+  <h1 class="h3 fw-bold mb-4">Wishlist</h1>
+  {% if products %}
+  <div class="row g-4">
+    {% for p in products %}
+    <div class="col-6 col-md-4 col-lg-3">
+      <div class="card card-product h-100">
+        <div class="img-wrap">
+          <img src="{% if p.image and p.image.startswith('http') %}{{ p.image }}{% else %}{{ url_for('static', filename='images/' ~ (p.image or 'placeholder.svg')) }}{% endif %}" alt="{{ p.name }}" loading="lazy">
+        </div>
+        <div class="card-body">
+          <h2 class="h6 fw-bold">{{ p.name }}</h2>
+          <span class="fw-bold">₹{{ '{:,.0f}'.format(p.price) }}</span>
+          <div class="d-flex gap-2 mt-2">
+            <a href="{{ url_for('product_detail', pid=p.id) }}" class="btn btn-sm btn-brand">View</a>
+            <form method="post" action="{{ url_for('wishlist_toggle', pid=p.id) }}" data-wishlist>
+              <button type="submit" class="btn btn-sm btn-outline-danger rounded-pill active wishlist-btn"><i class="fa-solid fa-heart"></i></button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="glass p-5 rounded-4 text-center text-muted">Your wishlist is empty.</div>
+  {% endif %}
+</div>
+{% endblock %}

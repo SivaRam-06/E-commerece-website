@@ -1,0 +1,49 @@
+{% extends "admin/layout.html" %}
+{% block admin_content %}
+<h1 class="h4 fw-bold mb-4">Dashboard</h1>
+<div class="row g-3 mb-4">
+  <div class="col-6 col-md-3">
+    <div class="glass p-4 rounded-4 text-center">
+      <div class="text-muted small">Customers</div>
+      <div class="display-6 fw-extrabold text-gradient">{{ stats.users }}</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="glass p-4 rounded-4 text-center">
+      <div class="text-muted small">Products</div>
+      <div class="display-6 fw-extrabold text-gradient">{{ stats.products }}</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="glass p-4 rounded-4 text-center">
+      <div class="text-muted small">Orders</div>
+      <div class="display-6 fw-extrabold text-gradient">{{ stats.orders }}</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="glass p-4 rounded-4 text-center">
+      <div class="text-muted small">Revenue</div>
+      <div class="fs-3 fw-extrabold text-gradient">₹{{ '{:,.0f}'.format(stats.revenue) }}</div>
+    </div>
+  </div>
+</div>
+<h2 class="h6 fw-bold mb-3">Recent orders</h2>
+<div class="table-responsive glass rounded-4">
+  <table class="table table-sm mb-0">
+    <thead><tr><th>#</th><th>User</th><th>Total</th><th>Status</th><th>Date</th></tr></thead>
+    <tbody>
+      {% for o in recent_orders %}
+      <tr>
+        <td>{{ o.id }}</td>
+        <td>{{ o.username }}</td>
+        <td>₹{{ '{:,.0f}'.format(o.total) }}</td>
+        <td><span class="badge bg-secondary">{{ o.status }}</span></td>
+        <td class="small text-muted">{{ o.created_at[:16] if o.created_at else '' }}</td>
+      </tr>
+      {% else %}
+      <tr><td colspan="5" class="text-muted text-center py-4">No orders yet.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

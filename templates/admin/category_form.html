@@ -1,0 +1,24 @@
+{% extends "admin/layout.html" %}
+{% block admin_content %}
+<h1 class="h4 fw-bold mb-4">{% if category %}Edit{% else %}New{% endif %} category</h1>
+<div class="glass p-4 rounded-4" style="max-width:560px;">
+  <form method="post" class="vstack gap-3">
+    <div>
+      <label class="form-label small fw-semibold">Name</label>
+      <input type="text" name="name" class="form-control" required value="{{ category.name if category else '' }}">
+    </div>
+    <div>
+      <label class="form-label small fw-semibold">Slug</label>
+      <input type="text" name="slug" class="form-control" required value="{{ category.slug if category else '' }}">
+    </div>
+    <div>
+      <label class="form-label small fw-semibold">Description</label>
+      <textarea name="description" class="form-control" rows="3">{{ category.description if category else '' }}</textarea>
+    </div>
+    <div>
+      <button type="submit" class="btn btn-brand">Save</button>
+      <a href="{{ url_for('admin_categories') }}" class="btn btn-outline-secondary rounded-pill">Back</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

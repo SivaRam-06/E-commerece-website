@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}Order #{{ order.id }}{% endblock %}
+{% block content %}
+<div class="container py-4 section-fade">
+  <a href="{{ url_for('orders') }}" class="small text-decoration-none mb-3 d-inline-block"><i class="fa-solid fa-arrow-left me-1"></i>All orders</a>
+  <div class="glass p-4 rounded-4 mb-4">
+    <div class="d-flex flex-wrap justify-content-between gap-2">
+      <div>
+        <h1 class="h4 fw-bold mb-1">Order #{{ order.id }}</h1>
+        <p class="text-muted small mb-0">{{ order.created_at }}</p>
+      </div>
+      <div class="text-end">
+        <span class="badge rounded-pill bg-primary">{{ order.status }}</span>
+        <p class="small text-muted mb-0 mt-2">{{ order.payment_method or 'cod' }}</p>
+      </div>
+    </div>
+    <hr>
+    <p class="small text-muted mb-0"><strong>Ship to:</strong> {{ order.shipping_snapshot }}</p>
+  </div>
+  <h2 class="h6 fw-bold mb-3">Items</h2>
+  <div class="vstack gap-2">
+    {% for it in items %}
+    <div class="glass p-3 rounded-3 d-flex justify-content-between">
+      <span>{{ it.product_name }} × {{ it.quantity }}</span>
+      <span class="fw-semibold">₹{{ '{:,.0f}'.format(it.price_at_purchase * it.quantity) }}</span>
+    </div>
+    {% endfor %}
+  </div>
+  <div class="text-end mt-3 fw-bold fs-5">Total: <span class="text-gradient">₹{{ '{:,.0f}'.format(order.total) }}</span></div>
+</div>
+{% endblock %}

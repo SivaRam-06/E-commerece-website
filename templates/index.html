@@ -1,0 +1,222 @@
+{% extends "base.html" %}
+{% block title %}Home{% endblock %}
+{% block content %}
+<section class="py-4">
+  <div class="container">
+    <div id="heroCarousel" class="carousel slide hero-slider" data-bs-ride="carousel" data-bs-interval="5000">
+      <div class="carousel-indicators">
+        <button type="button" data-bs-target="#heroCarousel" data-bs-slide-to="0" class="active"></button>
+        <button type="button" data-bs-target="#heroCarousel" data-bs-slide-to="1"></button>
+        <button type="button" data-bs-target="#heroCarousel" data-bs-slide-to="2"></button>
+      </div>
+      <div class="carousel-inner rounded-4 overflow-hidden">
+        <div class="carousel-item active">
+          <div class="hero-slide" style="background-image:url('https://images.unsplash.com/photo-1607082349566-187342175e2f?w=1600&auto=format&fit=crop');">
+            <div class="container content">
+              <p class="text-uppercase small fw-bold text-info mb-2">New season drop</p>
+              <h1 class="display-5 fw-extrabold mb-3">Elevate your everyday essentials</h1>
+              <p class="lead opacity-75 mb-4">Curated tech, fashion, and home picks with member-only deals.</p>
+              <a href="{{ url_for('products') }}" class="btn btn-brand btn-lg me-2">Shop now</a>
+              <a href="{{ url_for('products', sort='popularity') }}" class="btn btn-outline-light btn-lg rounded-pill">Trending</a>
+            </div>
+          </div>
+        </div>
+        <div class="carousel-item">
+          <div class="hero-slide" style="background-image:url('https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=1600&auto=format&fit=crop');">
+            <div class="container content">
+              <p class="text-uppercase small fw-bold text-info mb-2">Free fast delivery</p>
+              <h1 class="display-5 fw-extrabold mb-3">Premium brands, honest prices</h1>
+              <p class="lead opacity-75 mb-4">Glassmorphism UI meets a checkout that just works.</p>
+              <a href="{{ url_for('products', category='fashion') }}" class="btn btn-brand btn-lg">Explore fashion</a>
+            </div>
+          </div>
+        </div>
+        <div class="carousel-item">
+          <div class="hero-slide" style="background-image:url('https://images.unsplash.com/photo-1550009158-9ebf69173e03?w=1600&auto=format&fit=crop');">
+            <div class="container content">
+              <p class="text-uppercase small fw-bold text-info mb-2">Deals end soon</p>
+              <h1 class="display-5 fw-extrabold mb-3">Up to 40% off electronics</h1>
+              <p class="lead opacity-75 mb-4">Earbuds, watches, and smart accessories flying off shelves.</p>
+              <a href="{{ url_for('products', category='electronics') }}" class="btn btn-brand btn-lg">Grab deals</a>
+            </div>
+          </div>
+        </div>
+      </div>
+      <button class="carousel-control-prev" type="button" data-bs-target="#heroCarousel" data-bs-slide="prev">
+        <span class="carousel-control-prev-icon"></span>
+      </button>
+      <button class="carousel-control-next" type="button" data-bs-target="#heroCarousel" data-bs-slide="next">
+        <span class="carousel-control-next-icon"></span>
+      </button>
+    </div>
+  </div>
+</section>
+
+<section class="py-5 section-fade">
+  <div class="container">
+    <div class="d-flex justify-content-between align-items-end mb-4">
+      <div>
+        <h2 class="fw-bold mb-1">Featured picks</h2>
+        <p class="text-muted mb-0">Hand-selected by our merchandising team.</p>
+      </div>
+      <a href="{{ url_for('products') }}" class="btn btn-outline-glow d-none d-md-inline-flex">View all</a>
+    </div>
+    <div id="featCarousel" class="carousel slide" data-bs-ride="carousel" data-bs-interval="9000" data-bs-pause="hover">
+      <div class="carousel-inner">
+        {% for chunk in featured|batch(2, fill_with=None) %}
+        <div class="carousel-item {{ 'active' if loop.first }}">
+          <div class="row g-3">
+            {% for p in chunk %}
+            {% if p %}
+            <div class="col-md-6">
+              <div class="card card-product h-100">
+                <div class="row g-0 align-items-center">
+                  <div class="col-5">
+                    <div class="img-wrap m-2 rounded-3">
+                      <img src="{% if p.image and p.image.startswith('http') %}{{ p.image }}{% else %}{{ url_for('static', filename='images/' ~ (p.image or 'placeholder.svg')) }}{% endif %}" alt="{{ p.name }}" loading="lazy">
+                    </div>
+                  </div>
+                  <div class="col-7">
+                    <div class="card-body">
+                      <span class="badge bg-primary bg-opacity-10 text-primary small mb-2">{{ p.category_name }}</span>
+                      <h3 class="h5 fw-bold">{{ p.name }}</h3>
+                      <p class="small text-muted mb-2">{{ (p.description or '')[:80] }}…</p>
+                      <div class="d-flex align-items-center gap-2 mb-2">
+                        <span class="price-tag">₹{{ '{:,.0f}'.format(p.price) }}</span>
+                        {% if p.compare_at_price %}
+                        <span class="price-compare">₹{{ '{:,.0f}'.format(p.compare_at_price) }}</span>
+                        {% endif %}
+                      </div>
+                      <a href="{{ url_for('product_detail', pid=p.id) }}" class="btn btn-sm btn-brand">Details</a>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            {% endif %}
+            {% endfor %}
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+      {% if featured|length > 2 %}
+      <button class="carousel-control-prev" type="button" data-bs-target="#featCarousel" data-bs-slide="prev">
+        <span class="carousel-control-prev-icon"></span>
+      </button>
+      <button class="carousel-control-next" type="button" data-bs-target="#featCarousel" data-bs-slide="next">
+        <span class="carousel-control-next-icon"></span>
+      </button>
+      {% endif %}
+    </div>
+  </div>
+</section>
+
+<section class="py-5 section-fade">
+  <div class="container">
+    <h2 class="fw-bold mb-4">Shop by category</h2>
+    <div class="row g-3">
+      {% for c in categories %}
+      <div class="col-6 col-md-4 col-lg-2">
+        <a href="{{ url_for('products', category=c.slug) }}" class="text-decoration-none">
+          <div class="category-tile h-100">
+            <div class="rounded-circle mx-auto mb-3 d-flex align-items-center justify-content-center text-white fw-bold"
+                 style="width:56px;height:56px;background:linear-gradient(135deg,#2563eb,#38bdf8);">
+              {{ c.name[0] }}
+            </div>
+            <div class="fw-semibold">{{ c.name }}</div>
+            <div class="small text-muted">Explore</div>
+          </div>
+        </a>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+<section class="py-5 section-fade bg-body-secondary bg-opacity-10 rounded-4 mx-2 mx-md-3">
+  <div class="container">
+    <div class="d-flex justify-content-between align-items-end mb-4">
+      <div>
+        <h2 class="fw-bold mb-1">Trending deals</h2>
+        <p class="text-muted mb-0">What shoppers love right now.</p>
+      </div>
+    </div>
+    <div class="row g-4">
+      {% for p in trending[:4] %}
+      <div class="col-6 col-lg-3">
+        <div class="card card-product h-100">
+          <div class="img-wrap">
+            {% if p.compare_at_price %}
+            <span class="position-absolute top-0 start-0 m-2 badge-deal">Sale</span>
+            {% endif %}
+            <img src="{% if p.image and p.image.startswith('http') %}{{ p.image }}{% else %}{{ url_for('static', filename='images/' ~ (p.image or 'placeholder.svg')) }}{% endif %}" alt="{{ p.name }}" loading="lazy">
+          </div>
+          <div class="card-body">
+            <h3 class="h6 fw-bold mb-1">{{ p.name }}</h3>
+            <div class="d-flex align-items-center gap-2">
+              <span class="fw-bold">₹{{ '{:,.0f}'.format(p.price) }}</span>
+              {% if p.compare_at_price %}
+              <span class="price-compare small">₹{{ '{:,.0f}'.format(p.compare_at_price) }}</span>
+              {% endif %}
+            </div>
+            <a class="stretched-link" href="{{ url_for('product_detail', pid=p.id) }}" aria-label="{{ p.name }}"></a>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+<section class="py-5 section-fade">
+  <div class="container">
+    <h2 class="fw-bold mb-4">Customer voices</h2>
+    <div id="revCarousel" class="carousel slide" data-bs-ride="carousel">
+      <div class="carousel-inner">
+        {% for r in reviews|batch(3, fill_with=None) %}
+        <div class="carousel-item {{ 'active' if loop.first }}">
+          <div class="row g-3">
+            {% for x in r %}
+            {% if x %}
+            <div class="col-md-4">
+              <div class="testimonial-card">
+                <div class="text-warning mb-2">{% for i in range(x.rating) %}<i class="fa-solid fa-star"></i>{% endfor %}</div>
+                <p class="mb-3">“{{ x.comment }}”</p>
+                <div class="small text-muted">{{ x.full_name or x.username }} · {{ x.product_name }}</div>
+              </div>
+            </div>
+            {% endif %}
+            {% endfor %}
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+      {% if reviews|length > 3 %}
+      <button class="carousel-control-prev" type="button" data-bs-target="#revCarousel" data-bs-slide="prev">
+        <span class="carousel-control-prev-icon"></span>
+      </button>
+      <button class="carousel-control-next" type="button" data-bs-target="#revCarousel" data-bs-slide="next">
+        <span class="carousel-control-next-icon"></span>
+      </button>
+      {% endif %}
+    </div>
+  </div>
+</section>
+
+<section class="py-5 section-fade">
+  <div class="container">
+    <div class="glass p-4 p-md-5 rounded-4 text-center" style="background:linear-gradient(120deg,rgba(37,99,235,0.12),rgba(56,189,248,0.08));">
+      <h2 class="fw-bold mb-2">Join the EliteMart list</h2>
+      <p class="text-muted mb-4">Early access to drops and exclusive coupons.</p>
+      <form action="{{ url_for('newsletter') }}" method="post" class="row g-2 justify-content-center">
+        <div class="col-md-6 col-lg-4">
+          <input type="email" name="email" class="form-control form-control-lg" placeholder="Email address" required>
+        </div>
+        <div class="col-auto">
+          <button type="submit" class="btn btn-brand btn-lg">Subscribe</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</section>
+{% endblock %}

@@ -1,0 +1,61 @@
+{% extends "admin/layout.html" %}
+{% block admin_content %}
+<h1 class="h4 fw-bold mb-4">{% if product %}Edit{% else %}New{% endif %} product</h1>
+<div class="glass p-4 rounded-4" style="max-width:720px;">
+  <form method="post" enctype="multipart/form-data" class="row g-3">
+    <div class="col-12">
+      <label class="form-label small fw-semibold">Name</label>
+      <input type="text" name="name" class="form-control" required value="{{ product.name if product else '' }}">
+    </div>
+    <div class="col-md-6">
+      <label class="form-label small fw-semibold">Slug</label>
+      <input type="text" name="slug" class="form-control" required value="{{ product.slug if product else '' }}">
+    </div>
+    <div class="col-md-6">
+      <label class="form-label small fw-semibold">Category</label>
+      <select name="category_id" class="form-select" required>
+        {% for c in categories %}
+        <option value="{{ c.id }}" {{ 'selected' if product and product.category_id == c.id }}>{{ c.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-12">
+      <label class="form-label small fw-semibold">Description</label>
+      <textarea name="description" class="form-control" rows="4">{{ product.description if product else '' }}</textarea>
+    </div>
+    <div class="col-md-4">
+      <label class="form-label small fw-semibold">Price (₹)</label>
+      <input type="number" step="0.01" name="price" class="form-control" required value="{{ product.price if product else '' }}">
+    </div>
+    <div class="col-md-4">
+      <label class="form-label small fw-semibold">Compare at (optional)</label>
+      <input type="number" step="0.01" name="compare_at_price" class="form-control" value="{{ product.compare_at_price if product and product.compare_at_price else '' }}">
+    </div>
+    <div class="col-md-4">
+      <label class="form-label small fw-semibold">Stock</label>
+      <input type="number" name="stock" class="form-control" value="{{ product.stock if product else 0 }}">
+    </div>
+    <div class="col-md-6">
+      <label class="form-label small fw-semibold">Popularity score</label>
+      <input type="number" name="popularity" class="form-control" value="{{ product.popularity if product else 0 }}">
+    </div>
+    <div class="col-md-6 d-flex align-items-end">
+      <div class="form-check">
+        <input class="form-check-input" type="checkbox" name="is_featured" id="feat" value="1" {{ 'checked' if product and product.is_featured }}>
+        <label class="form-check-label" for="feat">Featured</label>
+      </div>
+    </div>
+    <div class="col-12">
+      <label class="form-label small fw-semibold">Image upload</label>
+      <input type="file" name="image" class="form-control" accept="image/*">
+      {% if product and product.image %}
+      <div class="small text-muted mt-1">Current: {{ product.image }}</div>
+      {% endif %}
+    </div>
+    <div class="col-12">
+      <button type="submit" class="btn btn-brand">Save</button>
+      <a href="{{ url_for('admin_products') }}" class="btn btn-outline-secondary rounded-pill">Cancel</a>
+    </div>
+  </form>
+</div>
+{% endblock %}
