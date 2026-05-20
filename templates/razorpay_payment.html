@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% block title %}Complete Payment{% endblock %}
+{% block content %}
+<div class="container py-4 section-fade">
+  <h1 class="h3 fw-bold mb-4">Complete payment</h1>
+  <div class="glass p-4 rounded-4">
+    <p class="mb-3">You will be redirected to Razorpay to complete the payment of <strong>₹{{ '{:,.2f}'.format(total) }}</strong>.</p>
+    <p class="small text-muted">If the checkout does not open automatically, click the button below.</p>
+    <button id="rzp-pay-btn" class="btn btn-primary">Pay now</button>
+  </div>
+</div>
+
+<form id="rzp-confirm-form" method="post" action="/razorpay/confirm" style="display:none;">
+  <input type="hidden" name="razorpay_payment_id" id="razorpay_payment_id">
+  <input type="hidden" name="razorpay_order_id" id="razorpay_order_id">
+  <input type="hidden" name="razorpay_signature" id="razorpay_signature">
+  <input type="hidden" name="order_id" value="{{ order_id }}">
+</form>
+
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script>
+  (function(){
+    var options = {
+      key: "{{ rzp_key }}",
+      amount: {{ rzp_order.amount }},
+      currency: "{{ rzp_order.currency }}",
+      name: "My Shop",
+      description: "Order #{{ order_id }}",
+      order_id: "{{ rzp_order.id }}",
+      handler: function (res){
+        document.getElementById('razorpay_payment_id').value = res.razorpay_payment_id;
+        document.getElementById('razorpay_order_id').value = res.razorpay_order_id;
+        document.getElementById('razorpay_signature').value = res.razorpay_signature;
+        document.getElementById('rzp-confirm-form').submit();
+      },
+      modal: {
+        ondismiss: function(){
+          window.location.href = '/orders';
+        }
+      }
+    };
+    var rzp = new Razorpay(options);
+    var btn = document.getElementById('rzp-pay-btn');
+    function openCheckout(){ rzp.open(); }
+    btn.addEventListener('click', openCheckout);
+    // auto open
+    setTimeout(openCheckout, 400);
+    // render UPI QR (optional) if VPA provided
+    var vpa = "{{ upi_vpa or '' }}";
+    if(vpa){
+      var upi = 'upi://pay?pa=' + encodeURIComponent(vpa) + '&pn=' + encodeURIComponent('My Shop') + '&am=' + ({{ ('%.2f' % total)|replace(',','') }}) + '&cu=INR&tn=' + encodeURIComponent('Order#{{ order_id }}');
+      var container = document.createElement('div');
+      container.className = 'mt-3';
+      var h = document.createElement('p'); h.className='small text-muted'; h.textContent='Or scan this UPI QR to pay to ' + vpa;
+      container.appendChild(h);
+      var qdiv = document.createElement('div'); qdiv.id = 'upi-qr'; container.appendChild(qdiv);
+      document.querySelector('.glass').appendChild(container);
+      new QRCode(qdiv, { text: upi, width: 200, height: 200 });
+    }
+
+    // poll payment status
+    function checkStatus(){
+      fetch('/razorpay/check/{{ order_id }}')
+        .then(r=>r.json())
+        .then(function(j){
+          if(j.ok && j.paid){
+            window.location.href = '/order/' + {{ order_id }};
+          }
+        })
+        .catch(()=>{});
+    }
+    var poll = setInterval(checkStatus, 3000);
+  })();
+</script>
+{% endblock %}

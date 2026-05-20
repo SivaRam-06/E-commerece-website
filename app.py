@@ -1,5 +1,7 @@
 import os
 import sqlite3
+import json
+import razorpay
 from datetime import datetime
 from functools import wraps
 from flask import (Flask,flash,g,jsonify,redirect,render_template,request,session,url_for,)
@@ -15,6 +17,9 @@ app = Flask(__name__)
 app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", "dev-change-me-in-production")
 app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
 app.config["MAX_CONTENT_LENGTH"] = 5 * 1024 * 1024
+app.config["RAZORPAY_KEY_ID"] = os.environ.get("RAZORPAY_KEY_ID")
+app.config["RAZORPAY_KEY_SECRET"] = os.environ.get("RAZORPAY_KEY_SECRET")
+app.config["RAZORPAY_UPI_VPA"] = os.environ.get("RAZORPAY_UPI_VPA")
 
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
@@ -307,6 +312,19 @@ def init_db():
                 )
         db.commit()
 
+    db.close()
+
+    # Ensure orders table has payment columns (migrate if older DB exists)
+    db = sqlite3.connect(DATABASE)
+    cur = db.execute("PRAGMA table_info(orders)").fetchall()
+    cols = {r[1] for r in cur}
+    if "payment_id" not in cols:
+        db.execute("ALTER TABLE orders ADD COLUMN payment_id TEXT")
+    if "razorpay_order_id" not in cols:
+        db.execute("ALTER TABLE orders ADD COLUMN razorpay_order_id TEXT")
+    if "payment_status" not in cols:
+        db.execute("ALTER TABLE orders ADD COLUMN payment_status TEXT DEFAULT 'Pending'")
+    db.commit()
     db.close()
 
 
@@ -759,25 +777,75 @@ def checkout():
                 ]
             )
         db = get_db()
-        cur = db.execute(
-            "INSERT INTO orders (user_id, total, status, payment_method, shipping_snapshot) VALUES (?,?,?,?,?)",
-            (uid, total, "Processing", payment, snap),
-        )
-        oid = cur.lastrowid
-        for r in rows:
-            db.execute(
-                """INSERT INTO order_items (order_id, product_id, quantity, price_at_purchase, product_name)
-                   VALUES (?,?,?,?,?)""",
-                (oid, r["product_id"], r["quantity"], float(r["price"]), r["name"]),
+        if payment == "razorpay":
+            # create a pending order, reserve stock and clear cart
+            cur = db.execute(
+                "INSERT INTO orders (user_id, total, status, payment_method, shipping_snapshot, payment_status) VALUES (?,?,?,?,?,?)",
+                (uid, total, "Pending Payment", payment, snap, "Pending"),
             )
+            oid = cur.lastrowid
+            for r in rows:
+                db.execute(
+                    """INSERT INTO order_items (order_id, product_id, quantity, price_at_purchase, product_name)
+                       VALUES (?,?,?,?,?)""",
+                    (oid, r["product_id"], r["quantity"], float(r["price"]), r["name"],),
+                )
+                db.execute(
+                    "UPDATE products SET stock = stock - ? WHERE id = ?",
+                    (r["quantity"], r["product_id"]),
+                )
+            db.execute("DELETE FROM cart WHERE user_id = ?", (uid,))
+            db.commit()
+
+            # create Razorpay order
+            key_id = app.config.get("RAZORPAY_KEY_ID")
+            key_secret = app.config.get("RAZORPAY_KEY_SECRET")
+            if not key_id or not key_secret:
+                flash("Payment gateway not configured.", "danger")
+                return redirect(url_for("orders"))
+            client = razorpay.Client(auth=(key_id, key_secret))
+            amount_paise = int(round(total * 100))
+            rzp_order = client.order.create({
+                "amount": amount_paise,
+                "currency": "INR",
+                "receipt": f"order_{oid}",
+                "payment_capture": 1,
+            })
+            # save razorpay order id on our order record
+            db = get_db()
             db.execute(
-                "UPDATE products SET stock = stock - ? WHERE id = ?",
-                (r["quantity"], r["product_id"]),
+                "UPDATE orders SET razorpay_order_id = ? WHERE id = ?",
+                (rzp_order.get("id"), oid),
             )
-        db.execute("DELETE FROM cart WHERE user_id = ?", (uid,))
-        db.commit()
-        flash("Order placed successfully!", "success")
-        return redirect(url_for("orders"))
+            db.commit()
+            return render_template(
+                "razorpay_payment.html",
+                rzp_key=key_id,
+                rzp_order=rzp_order,
+                order_id=oid,
+                total=total,
+                upi_vpa=app.config.get("RAZORPAY_UPI_VPA"),
+            )
+        else:
+            cur = db.execute(
+                "INSERT INTO orders (user_id, total, status, payment_method, shipping_snapshot) VALUES (?,?,?,?,?)",
+                (uid, total, "Processing", payment, snap),
+            )
+            oid = cur.lastrowid
+            for r in rows:
+                db.execute(
+                    """INSERT INTO order_items (order_id, product_id, quantity, price_at_purchase, product_name)
+                       VALUES (?,?,?,?,?)""",
+                    (oid, r["product_id"], r["quantity"], float(r["price"]), r["name"],),
+                )
+                db.execute(
+                    "UPDATE products SET stock = stock - ? WHERE id = ?",
+                    (r["quantity"], r["product_id"]),
+                )
+            db.execute("DELETE FROM cart WHERE user_id = ?", (uid,))
+            db.commit()
+            flash("Order placed successfully!", "success")
+            return redirect(url_for("orders"))
 
     return render_template(
         "checkout.html", items=rows, total=total, addresses=addresses
@@ -974,6 +1042,81 @@ def add_review(pid):
     except sqlite3.IntegrityError:
         flash("You already reviewed this product.", "warning")
     return redirect(url_for("product_detail", pid=pid))
+
+
+@app.route("/razorpay/confirm", methods=["POST"])
+@login_required
+def razorpay_confirm():
+    # Expecting razorpay_payment_id, razorpay_order_id, razorpay_signature, and our order_id
+    rpay_id = request.form.get("razorpay_payment_id")
+    rorder_id = request.form.get("razorpay_order_id")
+    rsignature = request.form.get("razorpay_signature")
+    our_oid = request.form.get("order_id", type=int)
+    if not (rpay_id and rorder_id and rsignature and our_oid):
+        flash("Invalid payment confirmation data.", "danger")
+        return redirect(url_for("orders"))
+    key_id = app.config.get("RAZORPAY_KEY_ID")
+    key_secret = app.config.get("RAZORPAY_KEY_SECRET")
+    if not key_id or not key_secret:
+        flash("Payment gateway not configured.", "danger")
+        return redirect(url_for("orders"))
+    client = razorpay.Client(auth=(key_id, key_secret))
+    try:
+        client.utility.verify_payment_signature(
+            {
+                "razorpay_order_id": rorder_id,
+                "razorpay_payment_id": rpay_id,
+                "razorpay_signature": rsignature,
+            }
+        )
+    except Exception:
+        # Verification failed
+        db = get_db()
+        db.execute(
+            "UPDATE orders SET payment_status = ?, status = ? WHERE id = ?",
+            ("Failed", "Payment failed", our_oid),
+        )
+        db.commit()
+        flash("Payment verification failed.", "danger")
+        return redirect(url_for("orders"))
+    # mark order as paid
+    db = get_db()
+    db.execute(
+        "UPDATE orders SET payment_status = ?, payment_id = ?, status = ? WHERE id = ?",
+        ("Paid", rpay_id, "Processing", our_oid),
+    )
+    db.commit()
+    flash("Payment successful — order confirmed.", "success")
+    return redirect(url_for("order_detail", oid=our_oid))
+
+
+@app.route("/razorpay/check/<int:oid>")
+@login_required
+def razorpay_check(oid):
+    row = query_one("SELECT razorpay_order_id, payment_status FROM orders WHERE id = ?", (oid,))
+    if not row or not row["razorpay_order_id"]:
+        return jsonify(ok=False, error="order not found"), 404
+    rorder = row["razorpay_order_id"]
+    key_id = app.config.get("RAZORPAY_KEY_ID")
+    key_secret = app.config.get("RAZORPAY_KEY_SECRET")
+    if not key_id or not key_secret:
+        return jsonify(ok=False, error="gateway not configured"), 400
+    client = razorpay.Client(auth=(key_id, key_secret))
+    try:
+        payments = client.order.payments(rorder)
+        for p in payments.get("items", []):
+            if p.get("status") == "captured":
+                # update our order
+                db = get_db()
+                db.execute(
+                    "UPDATE orders SET payment_status = ?, payment_id = ?, status = ? WHERE id = ?",
+                    ("Paid", p.get("id"), "Processing", oid),
+                )
+                db.commit()
+                return jsonify(ok=True, paid=True, payment_id=p.get("id"))
+        return jsonify(ok=True, paid=False, payment_status=row.get("payment_status"))
+    except Exception as e:
+        return jsonify(ok=False, error=str(e)), 500
 
 
 # ------------- Admin -------------
